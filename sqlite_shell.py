@@ -167,7 +167,6 @@ def run(stdin, stdout, stderr, parsed_args=None):
 .read FILENAME         Execute SQL in FILENAME
 .tables                List names of tables
 .schema ?PATTERN?      Show the CREATE statements matching PATTERN
-                       Add --indent for pretty-printing
 """.lstrip()); stderr.flush()
 				elif args[0] == ".cd":
 					if len(args) != 2: raise_invalid_command_error(command)
