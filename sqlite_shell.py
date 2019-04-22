@@ -159,20 +159,18 @@ def run(stdin, stdout, stderr, parsed_args=None):
 					return 0
 				elif args[0] == ".help":
 					stderr.write("""
+.cd DIRECTORY          Change the working directory to DIRECTORY
 .exit                  Exit this program
 .help                  Show this message
-.cd DIRECTORY          Change the working directory to DIRECTORY
-.quit                  Exit this program
 .open FILE             Close existing database and reopen FILE
+.quit                  Exit this program
 .read FILENAME         Execute SQL in FILENAME
-.tables                List names of tables
 .schema ?PATTERN?      Show the CREATE statements matching PATTERN
+.tables                List names of tables
 """.lstrip()); stderr.flush()
 				elif args[0] == ".cd":
 					if len(args) != 2: raise_invalid_command_error(command)
 					os.chdir(args[1])
-				elif args[0] == ".tables":
-					query = "SELECT name FROM sqlite_master WHERE type = 'table';"
 				elif args[0] == ".open":
 					if len(args) <= 1: raise_invalid_command_error(command)
 					filename = args[-1]
@@ -189,6 +187,8 @@ def run(stdin, stdout, stderr, parsed_args=None):
 					if pattern is not None:
 						query_parameters['pattern'] = pattern
 					query = "SELECT sql || ';' FROM sqlite_master WHERE type = :type" + (" AND name LIKE :pattern" if pattern is not None else "") + ";"
+				elif args[0] == ".tables":
+					query = "SELECT name FROM sqlite_master WHERE type = 'table';"
 				else:
 					raise_invalid_command_error(command)
 			except (RuntimeError, OSError, FileNotFoundError) as ex:
