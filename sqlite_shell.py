@@ -166,7 +166,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 .quit                  Exit this program
 .read FILENAME         Execute SQL in FILENAME
 .schema ?PATTERN?      Show the CREATE statements matching PATTERN
-.tables                List names of tables
+.tables ?TABLE?        List names of tables
 """.lstrip()); stderr.flush()
 				elif args[0] == ".cd":
 					if len(args) != 2: raise_invalid_command_error(command)
@@ -188,7 +188,12 @@ def run(stdin, stdout, stderr, parsed_args=None):
 						query_parameters['pattern'] = pattern
 					query = "SELECT sql || ';' FROM sqlite_master WHERE type = :type" + (" AND name LIKE :pattern" if pattern is not None else "") + ";"
 				elif args[0] == ".tables":
-					query = "SELECT name FROM sqlite_master WHERE type = 'table';"
+					if len(args) > 2: raise_invalid_command_error(command)
+					pattern = args[1] if len(args) > 1 else None
+					query_parameters['type'] = 'table'
+					if pattern is not None:
+						query_parameters['pattern'] = pattern
+					query = "SELECT name FROM sqlite_master WHERE type = :type" + (" AND name LIKE :pattern" if pattern is not None else "") + ";"
 				else:
 					raise_invalid_command_error(command)
 			except (RuntimeError, OSError, FileNotFoundError) as ex:
