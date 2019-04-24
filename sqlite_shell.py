@@ -28,7 +28,7 @@ def sql_commands(read_line):
 		if line is None:
 			while True:  # process preprocessor directives
 				counter += 1
-				not_in_the_middle_of_any_input = not in_string and i == j and all(len(chunk_) == 0 for chunk_ in concat)
+				not_in_the_middle_of_any_input = not in_string and i == j and all(map(lambda chunk_: len(chunk_) == 0, concat))
 				line = read_line(counter - 1, not_in_the_middle_of_any_input, prev_line)
 				prev_line = line
 				if not line:
