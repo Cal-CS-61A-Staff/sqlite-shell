@@ -134,7 +134,9 @@ def run(stdin, stdout, stderr, parsed_args=None):
 	if parsed_args and parsed_args.version:
 		stdout.write("%s\n" % (sqlite3.sqlite_version,)); stdout.flush()
 	else:
-		db = Database(":memory:", isolation_level=None)
+		filename = getattr(parsed_args, 'filename', None)
+		if filename is None: filename = ":memory:"
+		db = Database(filename, isolation_level=None)
 	def exec_script(db, filename, ignore_io_errors):
 		try:
 			with io.open(filename, 'r', encoding='utf-8') as f:
@@ -259,7 +261,8 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 		parents=[],
 		formatter_class=argparse.RawTextHelpFormatter)
 	argparser.add_argument('-version', '--version', action='store_true', help="show SQLite version")
-	argparser.add_argument('-init', '--init', metavar='FILE', help="read/process named file")
+	argparser.add_argument('-init', '--init', metavar="FILE", help="read/process named file")
+	argparser.add_argument('filename', nargs='?', metavar="FILENAME", help="is the name of an SQLite database. A new database is created if the file does not previously exist.")
 	(stdin, stdout, stderr) = (kwargs.pop('stdin', sys.stdin), kwargs.pop('stdout', sys.stdout), kwargs.pop('stderr', sys.stderr))
 	if False and len(args) == 0: return argparser.print_usage(stderr)
 	return run(stdin, stdout, SuppressKeyboardInterrupt(stderr) if isatty(stderr) else stderr, argparser.parse_args(args))
