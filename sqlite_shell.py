@@ -104,7 +104,8 @@ def parse_escaped_strings(s, encoding='utf-8', pattern=re.compile("(?:[^\"\'\\s]
 
 class Database(object):
 	def __init__(self, name, *args, **kwargs):
-		self.cursor = sqlite3.connect(name, *args, **kwargs).cursor()
+		self.connection = sqlite3.connect(name, *args, **kwargs)
+		self.cursor = self.connection.cursor()
 		self.name = name  # assign name only AFTER cursor is created
 
 def isatty(stream):
@@ -158,6 +159,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 				elif args[0] == ".help":
 					stderr.write("""
 .cd DIRECTORY          Change the working directory to DIRECTORY
+.dump                  Dump the database in an SQL text format
 .exit                  Exit this program
 .help                  Show this message
 .open FILE             Close existing database and reopen FILE
@@ -170,6 +172,13 @@ def run(stdin, stdout, stderr, parsed_args=None):
 				elif args[0] == ".cd":
 					if len(args) != 2: raise_invalid_command_error(command)
 					os.chdir(args[1])
+				elif args[0] == ".dump":
+					if len(args) != 1: raise_invalid_command_error(command)
+					foreign_keys = db.cursor.execute("PRAGMA foreign_keys;").fetchone()[0]
+					if foreign_keys in (0, "0", "off", "OFF"):
+						stdout.write("PRAGMA foreign_keys=OFF;\n")
+					for line in db.connection.iterdump():
+						stdout.write(line + "\n")
 				elif args[0] == ".open":
 					if len(args) <= 1: raise_invalid_command_error(command)
 					filename = args[-1]
