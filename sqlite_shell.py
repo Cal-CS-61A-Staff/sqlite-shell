@@ -131,6 +131,7 @@ def prompt(stdin, stdout=None, *args):
 
 def run(stdin, stdout, stderr, parsed_args=None):
 	db = None
+	init_sql = parsed_args.sql
 	if parsed_args and parsed_args.version:
 		stdout.write("%s\n" % (sqlite3.sqlite_version,)); stdout.flush()
 	else:
@@ -232,21 +233,28 @@ def run(stdin, stdout, stderr, parsed_args=None):
 		def read_stdin(index, not_in_the_middle_of_any_input, prev_line):
 			show_prompt = True
 			to_write = []
-			if isatty(stdin) and show_prompt:
-				if not_in_the_middle_of_any_input:
-					show_prompt = False
-					if index == 0:
-						to_write.append("SQLite version %s (adapter version %s)\nEnter \".help\" for instructions\nEnter SQL statements terminated with a \";\"\n" % (sqlite3.sqlite_version, sqlite3.version))
-						if db.name == ":memory:":
-							to_write.append("Connected to a transient in-memory database.\nUse \".open FILENAME\" to reopen on a persistent database.\n")
-				if index > 0 and not prev_line:
-					to_write.append("\n")
-				to_write.append("%7s " % ("sqlite%s>" % ("",) if not_in_the_middle_of_any_input else "...>",))
-			try:
-				line = prompt(stdin, stdout, "".join(to_write))
-			except KeyboardInterrupt:
-				line = ""
-				raise  # just kidding, don't handle it for now...
+			if index < len(init_sql):
+				line = init_sql[index]
+				if not line.startswith(".") and not line.rstrip().endswith(";"):
+					line += ";"
+			elif index == len(init_sql) and len(init_sql) > 0:
+				line = None
+			else:
+				if isatty(stdin) and show_prompt:
+					if not_in_the_middle_of_any_input:
+						show_prompt = False
+						if index == 0:
+							to_write.append("SQLite version %s (adapter version %s)\nEnter \".help\" for instructions\nEnter SQL statements terminated with a \";\"\n" % (sqlite3.sqlite_version, sqlite3.version))
+							if db.name == ":memory:":
+								to_write.append("Connected to a transient in-memory database.\nUse \".open FILENAME\" to reopen on a persistent database.\n")
+					if index > 0 and not prev_line:
+						to_write.append("\n")
+					to_write.append("%7s " % ("sqlite%s>" % ("",) if not_in_the_middle_of_any_input else "...>",))
+				try:
+					line = prompt(stdin, stdout, "".join(to_write))
+				except KeyboardInterrupt:
+					line = ""
+					raise  # just kidding, don't handle it for now...
 			return line
 		for command in sql_commands(read_stdin):
 			result = exec_command(db, command, True)
@@ -264,6 +272,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 	argparser.add_argument('-version', '--version', action='store_true', help="show SQLite version")
 	argparser.add_argument('-init', '--init', metavar="FILE", help="read/process named file")
 	argparser.add_argument('filename', nargs='?', metavar="FILENAME", help="is the name of an SQLite database. A new database is created if the file does not previously exist.")
+	argparser.add_argument('sql', nargs='*', metavar="SQL", help="SQL commnds to execute after opening database")
 	(stdin, stdout, stderr) = (kwargs.pop('stdin', sys.stdin), kwargs.pop('stdout', sys.stdout), kwargs.pop('stderr', sys.stderr))
 	if False and len(args) == 0: return argparser.print_usage(stderr)
 	return run(stdin, stdout, SuppressKeyboardInterrupt(stderr) if isatty(stderr) else stderr, argparser.parse_args(args))
