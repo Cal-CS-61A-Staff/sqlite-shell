@@ -5,6 +5,7 @@
 # A simple SQLite shell that uses the built-in Python adapter.
 
 import argparse
+import codecs
 import io
 import os
 import re
@@ -95,12 +96,14 @@ class SuppressKeyboardInterrupt(object):
 			try: return self.base.writelines(*args)
 			except KeyboardInterrupt as ex: self.mark_interrupt(ex)
 
-def parse_escaped_strings(s, encoding='utf-8', pattern=re.compile("(?:[^\"\'\\s]+|\"((?:[^\"]+|\\\\.)*)(?:\"|$)|\'((?:[^\']+|\\\\.)*)(?:\'|$))"), escape_pattern=re.compile("\\\\(.)")):
+def parse_escaped_strings(s, encoding='utf-8', pattern=re.compile("\"((?:[^\"\\n]+|\\\\.)*)(?:\"|$)|\'([^\'\\n]*)(?:\'|$)|(\\S+)"), escape_pattern=re.compile("\\\\(.)")):
+	result = []
 	for match in pattern.finditer(s):
-		m = match.group(0)
-		if len(m) > 0 and m[0] in "\'\"'":
-			m = escape_pattern.sub(lambda m: (lambda decoded: m.group(1) if m.group(0) == decoded else decoded)(m.group(0).encode(encoding).decode('string-escape')), match.group(1))
-		yield m
+		[m1, m2, m3] = match.groups()
+		if m1 is not None: result.append(codecs.unicode_escape_decode(m1)[0])
+		if m2 is not None: result.append(m2)
+		if m3 is not None: result.append(m3)
+	return result
 
 class Database(object):
 	def __init__(self, name, *args, **kwargs):
@@ -167,6 +170,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 .exit                  Exit this program
 .help                  Show this message
 .open FILE             Close existing database and reopen FILE
+.print STRING...       Print literal STRING
 .quit                  Exit this program
 .read FILENAME         Execute SQL in FILENAME
 .schema ?PATTERN?      Show the CREATE statements matching PATTERN
@@ -189,6 +193,8 @@ def run(stdin, stdout, stderr, parsed_args=None):
 					for option in args[+1:-1]:
 						raise ValueError("option %s not supported" % (repr(option),))
 					db.__init__(filename)
+				elif args[0] == ".print":
+					stdout.write(" ".join(args[1:]) + "\n")
 				elif args[0] == ".read":
 					if len(args) != 2: raise_invalid_command_error(command)
 					exec_script(db, args[1], ignore_io_errors)
