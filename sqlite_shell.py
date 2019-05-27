@@ -134,7 +134,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 	if parsed_args and parsed_args.version:
 		stdout.write("%s\n" % (sqlite3.sqlite_version,)); stdout.flush()
 	else:
-		filename = getattr(parsed_args, 'filename', None)
+		filename = parsed_args.filename
 		if filename is None: filename = ":memory:"
 		db = Database(filename, isolation_level=None)
 	def exec_script(db, filename, ignore_io_errors):
