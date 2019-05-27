@@ -148,7 +148,8 @@ def run(stdin, stdout, stderr, parsed_args=None):
 			stderr.write(str(ex) + "\n"); stderr.flush()
 			if not ignore_io_errors: return ex.errno
 	def raise_invalid_command_error(command):
-		raise RuntimeError("Error: unknown command or invalid arguments:  %s." % (repr(command.rstrip()),))
+		if command[:1] == ".": command = command[1:]
+		raise RuntimeError("Error: unknown command or invalid arguments:  %s. Enter \".help\" for help" % (repr(command.rstrip()),))
 	def exec_command(db, command, ignore_io_errors):
 		results = None
 		query = None
