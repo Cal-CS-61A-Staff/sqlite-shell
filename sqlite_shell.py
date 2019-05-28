@@ -11,8 +11,12 @@ import os
 import re
 import sys
 import sqlite3
+import warnings
 
-try: import readline
+try:
+	with warnings.catch_warnings():
+		warnings.filterwarnings('ignore', category=DeprecationWarning)
+		import readline
 except ImportError: pass
 
 try: FileNotFoundError
