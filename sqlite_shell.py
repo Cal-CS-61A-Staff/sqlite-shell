@@ -230,7 +230,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 				stderr.flush()
 		if results is not None:
 			for row in results:
-				stdout.write("|".join(map(str, row)) + "\n")
+				stdout.write("|".join(map(lambda item: str(item if item is not None else ""), row)) + "\n")
 			stdout.flush()
 	if db:
 		if parsed_args and parsed_args.init:
