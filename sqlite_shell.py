@@ -79,27 +79,6 @@ def sql_commands(read_line):
 			if i < j: concat.append(line[i:j]); i = j
 			line = None
 
-class SuppressKeyboardInterrupt(object):
-	def __init__(self, base):
-		self.base = base
-		self.ex = None
-	def __getattr__(self, key):
-		return getattr(self.base, key)
-	def mark_interrupt(self, ex):
-		self.ex = ex
-	def flush(self, *args):
-		while True:
-			try: return self.base.flush(*args)
-			except KeyboardInterrupt as ex: self.mark_interrupt(ex)
-	def write(self, *args):
-		while True:
-			try: return self.base.write(*args)
-			except KeyboardInterrupt as ex: self.mark_interrupt(ex)
-	def writelines(self, *args):
-		while True:
-			try: return self.base.writelines(*args)
-			except KeyboardInterrupt as ex: self.mark_interrupt(ex)
-
 def parse_escaped_strings(s, pattern=re.compile("\"((?:[^\"\\n]+|\\\\.)*)(?:\"|$)|\'([^\'\\n]*)(?:\'|$)|(\\S+)"), escape_pattern=re.compile("\\\\(.)")):
 	result = []
 	for match in pattern.finditer(s):
@@ -285,7 +264,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 	argparser.add_argument('sql', nargs='*', metavar="SQL", help="SQL commnds to execute after opening database")
 	(stdin, stdout, stderr) = (kwargs.pop('stdin', sys.stdin), kwargs.pop('stdout', sys.stdout), kwargs.pop('stderr', sys.stderr))
 	if False and len(args) == 0: return argparser.print_usage(stderr)
-	return run(stdin, stdout, SuppressKeyboardInterrupt(stderr) if isatty(stderr) else stderr, argparser.parse_args(args))
+	return run(stdin, stdout, stderr, argparser.parse_args(args))
 
 if __name__ == '__main__':
 	import sys
