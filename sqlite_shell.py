@@ -96,7 +96,7 @@ class SuppressKeyboardInterrupt(object):
 			try: return self.base.writelines(*args)
 			except KeyboardInterrupt as ex: self.mark_interrupt(ex)
 
-def parse_escaped_strings(s, encoding='utf-8', pattern=re.compile("\"((?:[^\"\\n]+|\\\\.)*)(?:\"|$)|\'([^\'\\n]*)(?:\'|$)|(\\S+)"), escape_pattern=re.compile("\\\\(.)")):
+def parse_escaped_strings(s, pattern=re.compile("\"((?:[^\"\\n]+|\\\\.)*)(?:\"|$)|\'([^\'\\n]*)(?:\'|$)|(\\S+)"), escape_pattern=re.compile("\\\\(.)")):
 	result = []
 	for match in pattern.finditer(s):
 		[m1, m2, m3] = match.groups()
