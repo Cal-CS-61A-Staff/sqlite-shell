@@ -115,10 +115,10 @@ def isatty(stream):
 	return stream.isatty()
 
 def can_call_input_for_stdio(stream):
-	return stream == sys.stdin
+	return stream == sys.stdin and sys.version_info[0] >= 3
 
 def prompt(stdin, stdout=None, *args):
-	if can_call_input_for_stdio(stdin) and sys.version_info[0] >= 3:
+	if can_call_input_for_stdio(stdin):
 		result = ""
 		try:
 			result = input(*args)
