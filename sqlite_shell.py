@@ -216,7 +216,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 						query_parameters['pattern'] = pattern
 					query = "SELECT name FROM sqlite_master WHERE type = :type" + (" AND name LIKE :pattern" if pattern is not None else "") + ";"
 				else:
-					raise_invalid_command_error(command)
+					raise_invalid_command_error(args[0])
 			except (RuntimeError, OSError, FileNotFoundError) as ex:
 				stderr.write(str(ex) + "\n")
 				stderr.flush()
