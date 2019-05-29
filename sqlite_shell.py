@@ -499,6 +499,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 	allow_set_code_page = sys.version_info[0] < 3 and False  # This is only necessary on Python 2 if we use the default I/O functions instead of bypassing to ReadConsole()/WriteConsole()
 	stdio = StdIOProxy(stdin, stdout, stderr, codec, allow_set_code_page)
 	db = None
+	state = {'colsep': "|"}
 	no_args = len(args) == 0
 	init_sql = parsed_args.sql
 	is_nonpipe_input = stdin.isatty()  # NOT the same thing as TTY! (NUL and /dev/null are the difference)
@@ -549,6 +550,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 .quit                  Exit this program
 .read FILENAME         Execute SQL in FILENAME
 .schema ?PATTERN?      Show the CREATE statements matching PATTERN
+.separator COL         Change the column separator
 .show                  Show the current values for various settings
 .tables ?TABLE?        List names of tables
 """.lstrip())
@@ -584,6 +586,9 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 					if pattern is not None:
 						query_parameters['pattern'] = pattern
 					query = "SELECT sql || ';' FROM sqlite_master WHERE type = :type" + (" AND name LIKE :pattern" if pattern is not None else "") + ";"
+				elif args[0] == ".separator":
+					if len(args) != 2: raise_invalid_command_error(command)
+					state['colsep'] = args[1]
 				elif args[0] == ".show":
 					if len(args) > 1: raise_invalid_command_error(command)
 					stdio.errorln("    filename:", db.name)
@@ -603,8 +608,9 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 		except (RuntimeError, OSError, FileNotFoundError, sqlite3.OperationalError) as ex:
 			stdio.errorln(exception_encode(ex, codec))
 		if results is not None:
+			colsep = state['colsep']
 			for row in results:
-				stdio.outputln(*tuple(map(lambda item: item if item is not None else "", row)), sep="|", flush=False)
+				stdio.outputln(*tuple(map(lambda item: item if item is not None else "", row)), sep=colsep, flush=False)
 			stdio.output()
 	if db:
 		if parsed_args and parsed_args.init:
