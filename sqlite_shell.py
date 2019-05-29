@@ -499,7 +499,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 	allow_set_code_page = sys.version_info[0] < 3 and False  # This is only necessary on Python 2 if we use the default I/O functions instead of bypassing to ReadConsole()/WriteConsole()
 	stdio = StdIOProxy(stdin, stdout, stderr, codec, allow_set_code_page)
 	db = None
-	state = {'colsep': "|"}
+	state = {'colsep': "|", 'header': False}
 	no_args = len(args) == 0
 	init_sql = parsed_args.sql
 	is_nonpipe_input = stdin.isatty()  # NOT the same thing as TTY! (NUL and /dev/null are the difference)
@@ -565,6 +565,9 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 					for line in db.connection.iterdump():
 						stdio.outputln(line, flush=False)
 					stdio.output()
+				elif args[0] == ".header":
+					if len(args) != 2 or args[1] not in ('on', 'off'): raise_invalid_command_error(command)
+					state['header'] = args[1] == 'on'
 				elif args[0] == ".open":
 					if len(args) <= 1: raise_invalid_command_error(command)
 					filename = args[-1]
@@ -609,6 +612,8 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 			stdio.errorln(exception_encode(ex, codec))
 		if results is not None:
 			colsep = state['colsep']
+			if state['header']:
+				stdio.outputln(*map(lambda t: t[0], results.description), sep=colsep, flush=False)
 			for row in results:
 				stdio.outputln(*tuple(map(lambda item: item if item is not None else "", row)), sep=colsep, flush=False)
 			stdio.output()
