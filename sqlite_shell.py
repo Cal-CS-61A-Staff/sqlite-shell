@@ -585,7 +585,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 						query_parameters['pattern'] = pattern
 					query = "SELECT sql || ';' FROM sqlite_master WHERE type = :type" + (" AND name LIKE :pattern" if pattern is not None else "") + ";"
 				elif args[0] == ".show":
-					if len(args) > 2: raise_invalid_command_error(command)
+					if len(args) > 1: raise_invalid_command_error(command)
 					stdio.errorln("    filename:", db.name)
 				elif args[0] == ".tables":
 					if len(args) > 2: raise_invalid_command_error(command)
