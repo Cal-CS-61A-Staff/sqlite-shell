@@ -254,7 +254,7 @@ def run(stdin, stdout, stderr, parsed_args=None):
 					if not_in_the_middle_of_any_input:
 						show_prompt = False
 						if index == 0:
-							to_write.append("SQLite version %s (adapter version %s)\nEnter \".help\" for instructions\nEnter SQL statements terminated with a \";\"\n" % (sqlite3.sqlite_version, sqlite3.version))
+							to_write.append("SQLite version %s (adapter version %s)\nEnter \".help\" for usage hints.\n" % (sqlite3.sqlite_version, sqlite3.version))
 							if db.name == ":memory:":
 								to_write.append("Connected to a transient in-memory database.\nUse \".open FILENAME\" to reopen on a persistent database.\n")
 					if index > 0 and not prev_line:
