@@ -120,7 +120,7 @@ def sql_commands(read_line):
 				break
 			j = i = 0
 		if j < len(line):
-			(j, delim) = min(map(lambda pair: pair if pair[0] >= 0 else (len(line), pair[1]), map(lambda d: (line.find(d, j), d), in_string or delims if in_string != '--' else "\n")))
+			(j, delim) = min(map(lambda pair: pair if pair[0] >= 0 else (len(line), None), map(lambda d: (line.find(d, j), d), in_string or delims if in_string != '--' else "\n")))
 			if i < j: concat.append(line[i:j]); i = j
 			if not in_string:
 				if j < len(line):
