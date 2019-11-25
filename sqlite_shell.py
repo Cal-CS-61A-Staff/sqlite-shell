@@ -499,7 +499,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 	allow_set_code_page = sys.version_info[0] < 3 and False  # This is only necessary on Python 2 if we use the default I/O functions instead of bypassing to ReadConsole()/WriteConsole()
 	stdio = StdIOProxy(stdin, stdout, stderr, codec, allow_set_code_page)
 	db = None
-	state = {'colsep': "|", 'header': False}
+	state = {'colsep': "|", 'header': False, 'echo': False}
 	no_args = len(args) == 0
 	init_sql = parsed_args.sql
 	is_nonpipe_input = stdin.isatty()  # NOT the same thing as TTY! (NUL and /dev/null are the difference)
@@ -543,6 +543,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 					stdio.error("""
 .cd DIRECTORY          Change the working directory to DIRECTORY
 .dump                  Dump the database in an SQL text format
+.echo on|off           Turn command echo on or off
 .exit                  Exit this program
 .help                  Show this message
 .open FILE             Close existing database and reopen FILE
@@ -565,6 +566,9 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 					for line in db.connection.iterdump():
 						stdio.outputln(line, flush=False)
 					stdio.output()
+				elif args[0] == ".echo":
+					if len(args) != 2 or args[1] not in ('on', 'off'): raise_invalid_command_error(command)
+					state['echo'] = args[1] == 'on'
 				elif args[0] == ".header":
 					if len(args) != 2 or args[1] not in ('on', 'off'): raise_invalid_command_error(command)
 					state['header'] = args[1] == 'on'
@@ -648,6 +652,7 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 					raise  # just kidding, don't handle it for now...
 			return line
 		for command in sql_commands(wrap_bytes_comparable_with_unicode_readline(read_stdin)):
+			if state['echo']: stdio.output(command)
 			result = exec_command(db, command, True)
 			if result is not None:
 				return result
