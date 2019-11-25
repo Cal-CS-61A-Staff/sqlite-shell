@@ -95,6 +95,7 @@ def exception_encode(ex, codec):
 
 def sql_commands(read_line):
 	delims = ['"', "'", ';', '--']
+	newline = "\n"
 	counter = 0
 	in_string = None
 	j = i = 0
@@ -120,35 +121,33 @@ def sql_commands(read_line):
 				break
 			j = i = 0
 		if j < len(line):
-			(j, delim) = min(map(lambda pair: pair if pair[0] >= 0 else (len(line), None), map(lambda d: (line.find(d, j), d), in_string or delims if in_string != '--' else "\n")))
-			if i < j: concat.append(line[i:j]); i = j
-			if not in_string:
-				if j < len(line):
-					j += len(delim)
-					if delim == ';':
-						i = j
-						concat.append(line[j : j + len(delim)])    # ensure delimeter is the same type as the string (it may not be due to implicit conversion)
-						# Eat up any further spaces until a newline
+			j0 = j
+			delim = None
+			if in_string != '--':
+				(j, delim) = min(map(lambda pair: pair if pair[0] >= 0 else (len(line), None), map(lambda d: (line.find(d, j0), d), in_string or delims)))
+			if in_string == '--' or (not in_string and j >= len(line)):
+				j = line.find(newline, j0)
+				if j >= 0: delim = newline
+				else: j: delim = None; j = len(line)
+			if j < len(line):
+				j += len(delim)
+				if not in_string:
+					if delim == ';' or delim == newline:
+						# Eat up any further spaces until after a newline
 						while j < len(line):
 							delim = line[j:j+1]
 							if not delim.isspace(): break
 							j += 1
-							if delim == "\n": break
-						if i < j: concat.append(line[i:j]); i = j
+							if delim == newline: break
+						if i < j: concat.append(line[i:j]); i = j  # force concat to become up-to-date before concat is returned
 						yield empty_string.join(concat)
 						del concat[:]
 					else:
 						in_string = delim
-			else:
-				if j < len(line):
-					ch = line[j:j+1]
-					assert ch == in_string or in_string == '--'
-					j += 1
-					i = j
-					concat.append(ch)
+				else:
 					in_string = None
 		else:
-			if i < j: concat.append(line[i:j]); i = j
+			if i < j: concat.append(line[i:j]); i = j  # force concat to become up-to-date before line is overwritten
 			line = None
 
 class WindowsConsoleIOMixin(object):
