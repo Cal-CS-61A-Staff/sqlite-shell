@@ -254,6 +254,13 @@ class NonOwningTextIOWrapper(io.TextIOWrapper):
 		super(NonOwningTextIOWrapper, self).__init__(base_textiowrapper.buffer, **kwargs)
 	def close(self):
 		super(NonOwningTextIOWrapper, self).flush()
+	def __eq__(self, other):
+		result = super(NonOwningTextIOWrapper, self).__eq__(other)
+		if result == NotImplemented:
+			result = self.base == other
+		return result
+	def __ne__(self, other):
+		return not (self == other)
 
 def wrap_unicode_stdio(stream, is_writer, encoding):  # The underlying stream must NOT be used directly until the stream returned by this function is disposed of
 	if isinstance(stream, io.TextIOWrapper):
