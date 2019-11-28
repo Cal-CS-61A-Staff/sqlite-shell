@@ -101,6 +101,7 @@ def sql_commands(read_line):
 	j = i = 0
 	prev_line = None
 	line = None
+	started_expr = False
 	concat = []
 	while True:
 		if line is None:
@@ -121,28 +122,26 @@ def sql_commands(read_line):
 				break
 			j = i = 0
 		if j < len(line):
-			j0 = j
 			delim = None
+			j0 = j
 			if in_string != '--':
+				# TODO: Using find() like this has quadratic behavior in the worst case, but is unlikely in practice...
 				(j, delim) = min(map(lambda pair: pair if pair[0] >= 0 else (len(line), None), map(lambda d: (line.find(d, j0), d), in_string or delims)))
-			if in_string == '--' or (not in_string and j >= len(line)):
+			if in_string == '--' or not in_string and delim is None and not started_expr:
 				j = line.find(newline, j0)
-				if j >= 0: delim = newline
-				else: j: delim = None; j = len(line)
-			if j < len(line):
+				if j < 0: j = len(line)
+				else: delim = newline
+			started_expr = started_expr or (j0 < j and not line[j0:j].isspace()) or delim != newline
+			# TODO: This is currently BROKEN! Set started_expr to something correct.
+			if delim is not None:
 				j += len(delim)
 				if not in_string:
-					if delim == ';' or delim == newline:
-						# Eat up any further spaces until after a newline
-						while j < len(line):
-							delim = line[j:j+1]
-							if not delim.isspace(): break
-							j += 1
-							if delim == newline: break
+					if delim == ';' or delim == newline and not started_expr:
 						if i < j: concat.append(line[i:j]); i = j  # force concat to become up-to-date before concat is returned
 						yield empty_string.join(concat)
 						del concat[:]
-					else:
+						started_expr = False
+					elif delim != newline:
 						in_string = delim
 				else:
 					in_string = None
@@ -530,6 +529,19 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 		if command.startswith("."): command = command[1:]
 		raise RuntimeError("Error: unknown command or invalid arguments:  \"%s\". Enter \".help\" for help" % (command.rstrip().replace("\\", "\\\\").replace("\"", "\\\""),))
 	def exec_command(db, command, ignore_io_errors):
+		if state['echo']:
+			# TODO: Our echo has minor differences compared to official sqlite3.
+			# For example, in the official implementation,
+			# Running '.echo on\nselect 1;--hi' doesn't echo the comment, but
+			# running '.echo on\nselect 1;\n--hi' does echo the comment.
+			# We don't attempt to handle that here...
+			command_to_echo = command
+			newline = "\n"
+			if command_to_echo.endswith(newline):
+				command_to_echo = command_to_echo[:-len(newline)]
+			if len(command_to_echo) > 0:
+				command_to_echo += "\n"
+			stdio.output(command_to_echo)
 		results = None
 		query = None
 		query_parameters = {}
@@ -651,7 +663,6 @@ def main(program, *args, **kwargs):  # **kwargs = dict(stdin=file, stdout=file, 
 					raise  # just kidding, don't handle it for now...
 			return line
 		for command in sql_commands(wrap_bytes_comparable_with_unicode_readline(read_stdin)):
-			if state['echo']: stdio.output(command)
 			result = exec_command(db, command, True)
 			if result is not None:
 				return result
