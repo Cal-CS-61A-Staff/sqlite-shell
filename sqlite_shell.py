@@ -273,7 +273,9 @@ def wrap_unicode_stdio(stream, is_writer, encoding):  # The underlying stream mu
 				kwargs[key] = value
 		kwargs['encoding'] = encoding
 		result = NonOwningTextIOWrapper(stream, **kwargs)
-	elif 'PYTHONIOENCODING' not in os.environ and str == bytes and stream in (sys.stdin, sys.stdout, sys.stderr):
+	elif is_writer and 'PYTHONIOENCODING' not in os.environ and str == bytes and stream in (sys.stdin, sys.stdout, sys.stderr):
+		# TODO: For readers, this isn't a good idea: buffering doesn't work line-by-line, so we don't see anything on the screen
+		# But what should we do in that case?
 		result = (codecs.getwriter if is_writer else codecs.getreader)(encoding)(stream)
 	else:
 		result = stream
